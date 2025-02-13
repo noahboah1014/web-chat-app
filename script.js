@@ -17,39 +17,40 @@ export default function Chat() {
 
   useEffect(() => {
     fetchMessages();
-    const subscription = supabase
-      .channel("realtime messages")
+    const channels = supabase.channel("custom-insert-channel")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
+        console.log("New message received!", payload);
         setMessages((prev) => [...prev, payload.new]);
       })
       .subscribe();
     
     return () => {
-      supabase.removeChannel(subscription);
+      supabase.removeChannel(channels);
     };
   }, []);
 
   const fetchMessages = async () => {
     let { data, error } = await supabase.from("messages").select("*").order("timestamp", { ascending: true });
-
     if (error) {
         console.error("Error fetching messages:", error.message);
         setError("Error fetching messages: " + error.message);
         return;
     }
-
-    console.log("Fetched messages:", data); // Debugging line
+    console.log("Fetched messages:", data);
     setMessages(data);
   };
 
   const sendMessage = async () => {
     if (newMessage.trim() === "" || !user) return;
-    let { error } = await supabase.from("messages").insert([{ username: user.username, text: newMessage }]);
+    let { data, error } = await supabase.from("messages").insert([
+      { username: user.username, text: newMessage }
+    ]).select();
     if (error) {
       console.error("Error sending message:", error.message);
       setError("Error sending message: " + error.message);
       return;
     }
+    console.log("Message sent:", data);
     setNewMessage("");
   };
 
