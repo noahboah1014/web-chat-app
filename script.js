@@ -14,7 +14,7 @@ export default function Chat() {
 
   useEffect(() => {
     fetchMessages();
-    const channels = supabase.channel("custom-insert-channel")
+    const channels = supabase.channel("messages-channel")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
         setMessages((prev) => [...prev, payload.new]);
       })
@@ -36,10 +36,10 @@ export default function Chat() {
     if (newMessage.trim() === "" || !user) return;
     let { data, error } = await supabase.from("messages").insert([
       { username: user.username, text: newMessage, timestamp: new Date().toISOString() }
-    ]).select();
+    ]);
     if (!error) {
-      setMessages((prev) => [...prev, ...data]);
       setNewMessage("");
+      fetchMessages();
     }
   };
 
