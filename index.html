@@ -3,30 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat App</title>
+    <title>Noah's Chat</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 </head>
 <body>
-    <h1>Noah's Chat</h1>
-    <div id="auth">
-        <input type="text" id="username" placeholder="Username">
-        <input type="password" id="password" placeholder="Password">
-        <button onclick="signIn(document.getElementById('username').value, document.getElementById('password').value)">Sign In</button>
-        <button onclick="signUp(document.getElementById('username').value, document.getElementById('password').value)">Sign Up</button>
-        <button onclick="logOut()">Log Out</button>
-    </div>
-    
-    <p id="user-info"></p>
-    
-    <div id="chat-box" class="chat-box"></div>
-    
-    <input type="text" id="message-input" placeholder="Type a message...">
-    <button id="send-button">Send</button>
+    <div class="container">
+        <h1>Noah's Chat</h1>
 
-    <script src="supabase.js"></script>
+        <div id="auth-container">
+            <div id="login-box">
+                <input type="text" id="username" placeholder="Username">
+                <input type="password" id="password" placeholder="Password">
+                <button id="login-btn">Log In</button>
+                <button id="signup-btn">Sign Up</button>
+            </div>
+            <div id="user-info" style="display: none;">
+                <p>Logged in as: <span id="logged-in-user"></span></p>
+                <button id="logout-btn">Log Out</button>
+            </div>
+        </div>
+
+        <div id="chat-box">
+            <div id="messages"></div>
+            <input type="text" id="message-input" placeholder="Type a message...">
+            <button id="send-btn">Send</button>
+        </div>
+    </div>
+
     <script src="auth.js"></script>
     <script src="chat.js"></script>
-    <script src="ui.js"></script>
 </body>
 </html>
