@@ -43,7 +43,7 @@ export default function Chat() {
   const sendMessage = async () => {
     if (newMessage.trim() === "" || !user) return;
     let { data, error } = await supabase.from("messages").insert([
-      { username: user.username, text: newMessage }
+      { username: user.username, text: newMessage, timestamp: new Date().toISOString() }
     ]).select();
     if (error) {
       console.error("Error sending message:", error.message);
@@ -51,6 +51,7 @@ export default function Chat() {
       return;
     }
     console.log("Message sent:", data);
+    setMessages((prev) => [...prev, ...data]);
     setNewMessage("");
   };
 
