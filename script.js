@@ -1,6 +1,4 @@
 import { useState, useEffect } from "react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL = "https://pdtudwscpnptuhbhkcgo.supabase.co";
@@ -13,13 +11,11 @@ export default function Chat() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [user, setUser] = useState(() => JSON.parse(localStorage.getItem("user")) || null);
-  const [error, setError] = useState("");
 
   useEffect(() => {
     fetchMessages();
     const channels = supabase.channel("custom-insert-channel")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
-        console.log("New message received!", payload);
         setMessages((prev) => [...prev, payload.new]);
       })
       .subscribe();
@@ -31,13 +27,9 @@ export default function Chat() {
 
   const fetchMessages = async () => {
     let { data, error } = await supabase.from("messages").select("*").order("timestamp", { ascending: true });
-    if (error) {
-        console.error("Error fetching messages:", error.message);
-        setError("Error fetching messages: " + error.message);
-        return;
+    if (!error) {
+      setMessages(data);
     }
-    console.log("Fetched messages:", data);
-    setMessages(data);
   };
 
   const sendMessage = async () => {
@@ -45,14 +37,10 @@ export default function Chat() {
     let { data, error } = await supabase.from("messages").insert([
       { username: user.username, text: newMessage, timestamp: new Date().toISOString() }
     ]).select();
-    if (error) {
-      console.error("Error sending message:", error.message);
-      setError("Error sending message: " + error.message);
-      return;
+    if (!error) {
+      setMessages((prev) => [...prev, ...data]);
+      setNewMessage("");
     }
-    console.log("Message sent:", data);
-    setMessages((prev) => [...prev, ...data]);
-    setNewMessage("");
   };
 
   const signUp = () => {
@@ -69,36 +57,34 @@ export default function Chat() {
     }
   };
 
-  if (!user) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen p-4">
-        <h1 className="text-2xl font-bold mb-4">Noah's Chat</h1>
-        <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" className="mb-2" />
-        <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" className="mb-2" />
-        <Button onClick={signIn} className="mb-2">Sign In</Button>
-        <Button onClick={signUp}>Sign Up</Button>
-      </div>
-    );
-  }
+  const logOut = () => {
+    localStorage.removeItem("user");
+    setUser(null);
+  };
 
   return (
-    <div className="flex flex-col h-screen p-4 bg-gray-100">
-      <h1 className="text-3xl font-bold text-center mb-4">Noah's Chat</h1>
-      {error && <div className="text-red-500 mb-2">{error}</div>}
-      <div className="flex-1 overflow-y-auto border p-4 rounded-lg bg-white shadow-md" style={{ maxHeight: "70vh" }}>
-        {messages.map((msg) => (
-          <div key={msg.id} className="mb-3">
-            <strong className="block text-sm text-gray-600">{msg.username}</strong>
-            <div className="inline-block px-4 py-2 bg-blue-500 text-white rounded-full shadow-md max-w-xs">
-              {msg.text}
-            </div>
-          </div>
+    <div className="p-4">
+      <h1>Noah's Chat</h1>
+      {!user ? (
+        <div>
+          <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" />
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" />
+          <button onClick={signIn}>Sign In</button>
+          <button onClick={signUp}>Sign Up</button>
+        </div>
+      ) : (
+        <div>
+          <p>Logged in as: {user.username}</p>
+          <button onClick={logOut}>Log Out</button>
+        </div>
+      )}
+      <div className="chat-box" style={{ border: "1px solid black", padding: "10px", marginTop: "10px", height: "300px", overflowY: "auto" }}>
+        {messages.map((msg, index) => (
+          <p key={index}><strong>{msg.username}:</strong> {msg.text}</p>
         ))}
       </div>
-      <div className="flex mt-2">
-        <Input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Type a message..." className="flex-1" />
-        <Button onClick={sendMessage} className="ml-2 bg-blue-500 text-white">Send</Button>
-      </div>
+      <input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Type a message..." />
+      <button onClick={sendMessage}>Send</button>
     </div>
   );
 }
