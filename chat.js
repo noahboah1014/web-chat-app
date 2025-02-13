@@ -1,22 +1,36 @@
-// chat.js
+document.addEventListener("DOMContentLoaded", () => {
+    fetchMessages();
+});
+
 async function fetchMessages() {
     let { data, error } = await supabase.from("messages").select("*").order("timestamp", { ascending: true });
     if (!error) {
-        updateChatUI(data);
+        const messagesDiv = document.getElementById("messages");
+        messagesDiv.innerHTML = "";
+        data.forEach(msg => {
+            const messageElement = document.createElement("p");
+            messageElement.innerHTML = `<strong>${msg.username}:</strong> ${msg.text}`;
+            messagesDiv.appendChild(messageElement);
+        });
     }
 }
 
-async function sendMessage(username, message) {
-    if (message.trim() === "") return;
-    
+async function sendMessage() {
+    const user = JSON.parse(localStorage.getItem("loggedInUser"));
+    const messageInput = document.getElementById("new-message");
+
+    if (!user) {
+        alert("You must be logged in to send messages.");
+        return;
+    }
+    if (messageInput.value.trim() === "") return;
+
     let { error } = await supabase.from("messages").insert([
-        { user_id: username, text: message, timestamp: new Date().toISOString() }
+        { username: user.username, text: messageInput.value, timestamp: new Date().toISOString() }
     ]);
 
     if (!error) {
+        messageInput.value = "";
         fetchMessages();
     }
 }
-
-// Listen for new messages
-supabase.channel("messages").on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, fetchMessages).subscribe();
