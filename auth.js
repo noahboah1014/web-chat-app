@@ -78,6 +78,23 @@ async function logOut() {
     alert("Logged out successfully!");
 }
 
+// Function to update the UI based on login status
+function updateUI() {
+    let loginForm = document.getElementById("login-form");
+    let logoutButton = document.getElementById("logout-button");
+    let welcomeMessage = document.getElementById("welcome-message");
+
+    if (user) {
+        loginForm.style.display = "none"; // Hide login form
+        logoutButton.style.display = "block"; // Show logout button
+        welcomeMessage.innerText = `Logged in as: ${user.email}`;
+    } else {
+        loginForm.style.display = "block"; // Show login form
+        logoutButton.style.display = "none"; // Hide logout button
+        welcomeMessage.innerText = ""; // Clear welcome message
+    }
+}
+
 // Load user from local storage on page load
 document.addEventListener("DOMContentLoaded", () => {
     user = JSON.parse(localStorage.getItem("user")) || null;
