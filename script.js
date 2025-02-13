@@ -30,8 +30,16 @@ export default function Chat() {
 
   const fetchMessages = async () => {
     let { data, error } = await supabase.from("messages").select("*").order("timestamp", { ascending: true });
-    if (!error) setMessages(data);
+
+    if (error) {
+        console.error("Error fetching messages:", error.message);
+        return;
+    }
+
+    console.log("Fetched messages:", data); // Debugging line
+    setMessages(data);
   };
+
 
   const sendMessage = async () => {
     if (newMessage.trim() === "" || !user) return;
