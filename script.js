@@ -13,12 +13,14 @@ export default function Chat() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [user, setUser] = useState(() => JSON.parse(localStorage.getItem("user")) || null);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     fetchMessages();
     const subscription = supabase
       .channel("realtime messages")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "Messages" }, (payload) => {
+        console.log("New message received:", payload.new);
         setMessages((prev) => [...prev, payload.new]);
       })
       .subscribe();
@@ -29,21 +31,26 @@ export default function Chat() {
   }, []);
 
   const fetchMessages = async () => {
-    let { data, error } = await supabase.from("messages").select("*").order("timestamp", { ascending: true });
-
+    let { data, error } = await supabase.from("Messages").select("*").order("timestamp", { ascending: true });
     if (error) {
         console.error("Error fetching messages:", error.message);
+        setErrorMessage("Failed to fetch messages");
         return;
     }
-
-    console.log("Fetched messages:", data); // Debugging line
+    console.log("Fetched messages:", data);
     setMessages(data);
   };
 
-
   const sendMessage = async () => {
     if (newMessage.trim() === "" || !user) return;
-    await supabase.from("messages").insert([{ username: user.username, text: newMessage }]);
+    
+    const { error } = await supabase.from("Messages").insert([{ username: user.username, text: newMessage }]);
+    
+    if (error) {
+      console.error("Error sending message:", error.message);
+      setErrorMessage("Failed to send message");
+      return;
+    }
     setNewMessage("");
   };
 
@@ -76,6 +83,7 @@ export default function Chat() {
   return (
     <div className="flex flex-col h-screen p-4 bg-gray-100">
       <h1 className="text-3xl font-bold text-center mb-4">Noah's Chat</h1>
+      {errorMessage && <div className="text-red-500 text-center mb-2">{errorMessage}</div>}
       <div className="flex-1 overflow-y-auto border p-4 rounded-lg bg-white shadow-md" style={{ maxHeight: "70vh" }}>
         {messages.map((msg) => (
           <div key={msg.id} className="mb-3">
