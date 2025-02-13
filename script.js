@@ -10,7 +10,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 export default function Chat() {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [user, setUser] = useState(() => JSON.parse(localStorage.getItem("user")) || null);
 
@@ -18,7 +18,7 @@ export default function Chat() {
     fetchMessages();
     const subscription = supabase
       .channel("realtime messages")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "Messages" }, (payload) => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
         setMessages((prev) => [...prev, payload.new]);
       })
       .subscribe();
@@ -29,51 +29,35 @@ export default function Chat() {
   }, []);
 
   const fetchMessages = async () => {
-    let { data, error } = await supabase.from("Messages").select("*").order("timestamp", { ascending: true });
+    let { data, error } = await supabase.from("messages").select("*").order("timestamp", { ascending: true });
     if (!error) setMessages(data);
   };
 
   const sendMessage = async () => {
     if (newMessage.trim() === "" || !user) return;
-    const { data, error } = await supabase.from("Messages").insert([{ 
-      user_id: user.id, 
-      username: user.user_metadata.username, 
-      text: newMessage 
-    }]);
-    if (error) console.error("Error sending message:", error);
+    await supabase.from("messages").insert([{ username: user.username, text: newMessage }]);
     setNewMessage("");
   };
 
-  const signUp = async () => {
-    const { user, error } = await supabase.auth.signUp({ email, password });
-    if (error) {
-      alert("Sign-up failed: " + error.message);
-    } else {
-      setUser(user);
-      localStorage.setItem("user", JSON.stringify(user));
-    }
+  const signUp = () => {
+    localStorage.setItem("user", JSON.stringify({ username, password }));
+    setUser({ username, password });
   };
 
-  const signIn = async () => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      alert("Login failed: " + error.message);
+  const signIn = () => {
+    const savedUser = JSON.parse(localStorage.getItem("user"));
+    if (savedUser && savedUser.username === username && savedUser.password === password) {
+      setUser(savedUser);
     } else {
-      setUser(data.user);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      alert("Invalid credentials");
     }
-  };
-
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    localStorage.removeItem("user");
   };
 
   if (!user) {
     return (
       <div className="flex flex-col items-center justify-center h-screen p-4">
-        <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="mb-2" />
+        <h1 className="text-2xl font-bold mb-4">Noah's Chat</h1>
+        <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" className="mb-2" />
         <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" className="mb-2" />
         <Button onClick={signIn} className="mb-2">Sign In</Button>
         <Button onClick={signUp}>Sign Up</Button>
@@ -82,23 +66,22 @@ export default function Chat() {
   }
 
   return (
-    <div className="flex flex-col h-screen p-4">
-      <div className="flex justify-between mb-2">
-        <span>Logged in as: {user.user_metadata?.username || user.email}</span>
-        <Button onClick={signOut}>Sign Out</Button>
-      </div>
-      <div className="flex-1 overflow-y-auto border p-2 rounded-lg">
+    <div className="flex flex-col h-screen p-4 bg-gray-100">
+      <h1 className="text-3xl font-bold text-center mb-4">Noah's Chat</h1>
+      <div className="flex-1 overflow-y-auto border p-4 rounded-lg bg-white shadow-md" style={{ maxHeight: "70vh" }}>
         {messages.map((msg) => (
-          <div key={msg.id} className="p-2 border-b">
-            <strong>{msg.username}:</strong> {msg.text}
+          <div key={msg.id} className="mb-3">
+            <strong className="block text-sm text-gray-600">{msg.username}</strong>
+            <div className="inline-block px-4 py-2 bg-blue-500 text-white rounded-full shadow-md max-w-xs">
+              {msg.text}
+            </div>
           </div>
         ))}
       </div>
       <div className="flex mt-2">
-        <Input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Type a message..." />
-        <Button onClick={sendMessage} className="ml-2">Send</Button>
+        <Input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Type a message..." className="flex-1" />
+        <Button onClick={sendMessage} className="ml-2 bg-blue-500 text-white">Send</Button>
       </div>
     </div>
   );
 }
-
