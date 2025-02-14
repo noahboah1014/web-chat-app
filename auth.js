@@ -4,11 +4,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const authContainer = document.getElementById("auth-container");
     const chatContainer = document.getElementById("chat-container");
 
-    async function getCurrentUser() {
-        const { data: { user } } = await supabase.auth.getUser();
-        return user;
-    }
-
+    // Function to update UI based on login status
     function updateUI(user) {
         if (user) {
             authContainer.style.display = "none";
@@ -21,6 +17,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
+    // Check for an existing session
+    const { data: { user } } = await supabase.auth.getUser();
+    updateUI(user);
+
+    // Login form submission
     loginForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const email = document.getElementById("email").value;
@@ -30,18 +31,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         if (error) {
             console.error("Login failed:", error.message);
-            alert("Invalid login credentials");
+            alert("Invalid credentials. Please try again.");
         } else {
             console.log("Login successful:", data);
             updateUI(data.user);
         }
     });
 
+    // Logout button click event
     logoutButton.addEventListener("click", async () => {
         await supabase.auth.signOut();
         updateUI(null);
     });
-
-    const user = await getCurrentUser();
-    updateUI(user);
 });
