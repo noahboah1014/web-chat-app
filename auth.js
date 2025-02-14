@@ -1,3 +1,5 @@
+alert("auth.js loaded successfully");
+
 async function handleSignup() {
     alert("Signup function started");  // Debug message
 
