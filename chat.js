@@ -1,23 +1,7 @@
 document.addEventListener("DOMContentLoaded", async () => {
     await fetchMessages(); // Load existing messages when the page loads
 
-    document.getElementById("sendMessage").addEventListener("click", async () => {
-        const messageInput = document.getElementById("messageInput");
-        const text = messageInput.value.trim();
-        const user = JSON.parse(localStorage.getItem("user"));
-
-        if (!text || !user) return; // Prevent empty messages or sending when not logged in
-
-        const { data, error } = await supabase.from("messages").insert([
-            { user_id: user.id, username: user.username, text: text, timestamp: new Date().toISOString() }
-        ]);
-
-        if (error) {
-            console.error("Error sending message:", error);
-        } else {
-            messageInput.value = ""; // Clear text box after sending
-        }
-    });
+    document.getElementById("sendMessage").addEventListener("click", sendMessage);
 
     // Listen for new messages in real-time
     supabase
@@ -37,6 +21,28 @@ async function fetchMessages() {
         const chatBox = document.getElementById("chatBox");
         chatBox.innerHTML = ""; // Clear existing messages before appending
         data.forEach(displayMessage);
+    }
+}
+
+async function sendMessage() {
+    const messageInput = document.getElementById("messageInput");
+    const text = messageInput.value.trim();
+    const user = JSON.parse(localStorage.getItem("user"));
+
+    if (!text || !user) {
+        console.error("Message is empty or user is not logged in.");
+        return;
+    }
+
+    const { data, error } = await supabase.from("messages").insert([
+        { user_id: user.id, username: user.username, text: text, timestamp: new Date().toISOString() }
+    ]);
+
+    if (error) {
+        console.error("Error sending message:", error);
+    } else {
+        messageInput.value = ""; // Clear text box after sending
+        console.log("Message sent successfully:", data);
     }
 }
 
