@@ -1,12 +1,7 @@
 document.addEventListener("DOMContentLoaded", async () => {
     const messageInput = document.getElementById("message-input");
     const sendButton = document.getElementById("send-button");
-    const messagesContainer = document.getElementById("messages");
-
-    async function getCurrentUser() {
-        const { data: { user } } = await supabase.auth.getUser();
-        return user;
-    }
+    const messagesContainer = document.getElementById("messages-container");
 
     async function fetchMessages() {
         const { data, error } = await supabase.from("messages").select("*").order("created_at", { ascending: true });
@@ -19,38 +14,32 @@ document.addEventListener("DOMContentLoaded", async () => {
         messagesContainer.innerHTML = "";
         data.forEach((msg) => {
             const messageElement = document.createElement("div");
-            messageElement.textContent = `${msg.user_email}: ${msg.text}`;
+            messageElement.textContent = `${msg.username}: ${msg.content}`;
             messagesContainer.appendChild(messageElement);
         });
     }
 
-    async function sendMessage() {
-        const user = await getCurrentUser();
+    sendButton.addEventListener("click", async () => {
+        const message = messageInput.value.trim();
+        if (!message) return;
+
+        const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
             alert("You must be logged in to send messages.");
             return;
         }
 
-        const text = messageInput.value.trim();
-        if (text === "") return;
-
-        const { error } = await supabase.from("messages").insert([
-            { user_id: user.id, user_email: user.email, text: text }
-        ]);
+        const { error } = await supabase.from("messages").insert([{ username: user.email, content: message }]);
 
         if (error) {
             console.error("Error sending message:", error.message);
-            return;
+        } else {
+            messageInput.value = "";
+            fetchMessages();
         }
-
-        messageInput.value = "";
-        fetchMessages();
-    }
-
-    sendButton.addEventListener("click", sendMessage);
-    messageInput.addEventListener("keypress", (event) => {
-        if (event.key === "Enter") sendMessage();
     });
 
-    await fetchMessages();
+    // Fetch messages on load and listen for new ones
+    fetchMessages();
+    supabase.channel("messages").on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, fetchMessages).subscribe();
 });
