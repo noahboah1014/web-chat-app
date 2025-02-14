@@ -1,5 +1,19 @@
 alert("auth.js loaded successfully");
 
+document.addEventListener("DOMContentLoaded", async () => {
+    const { data: { user }, error } = await supabase.auth.getUser();
+
+    if (error) {
+        console.error("Error fetching user:", error.message);
+    } else if (user) {
+        console.log("User found:", user);
+        updateUI(user);
+    } else {
+        console.log("No user found");
+    }
+});
+
+
 async function handleSignup() {
     alert("Signup function started");  // Debug message
 
