@@ -5,13 +5,12 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// Ensure session persistence
 supabase.auth.onAuthStateChange((event, session) => {
     console.log("Auth event:", event);
-    if (event === "SIGNED_IN") {
-        console.log("User signed in:", session.user);
-        updateUI(session.user);
-    } else if (event === "SIGNED_OUT") {
-        console.log("User signed out");
-        updateUI(null);
+    if (session) {
+        console.log("Session found:", session);
+    } else {
+        console.log("No session found.");
     }
 });
